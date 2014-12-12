@@ -13,3 +13,8 @@ platforms :jruby do
   gem "jdbc-mysql"
   gem "jdbc-sqlite3"
 end
+
+group :test do
+  gem "activemodel"
+  gem "activesupport"
+end

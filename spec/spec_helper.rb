@@ -6,6 +6,7 @@ require "bundler/setup"
 require "rspec"
 require "logger"
 require "sequel"
+Sequel::Model.plugin :active_model
 
 def jruby?
   (defined?(RUBY_ENGINE) && RUBY_ENGINE=="jruby") || defined?(JRUBY_VERSION)

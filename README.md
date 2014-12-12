@@ -1,59 +1,15 @@
-# DelayedJob Sequel Backend
+# Fork of DelayedJob Sequel Backend
 
-[![Build Status](https://secure.travis-ci.org/TalentBox/delayed_job_sequel.png?branch=master)](http://travis-ci.org/TalentBox/delayed_job_sequel)
-[![Code Climate](https://codeclimate.com/github/TalentBox/delayed_job_sequel.png)](https://codeclimate.com/github/TalentBox/delayed_job_sequel)
+Forked from [delayed\_job\_sequel](https://github.com/TalentBox/delayed_job_sequel)
 
-## Compatibility
+We've removed the following features to reduce deadlock when using MySQL.
 
-This gem works on Ruby (MRI/CRuby) 1.9.3 and 2.0.x.
+* Job Priorities
+* Expired job processing
+* Own failed job processing
 
-It's strongly recommended to use a Ruby >= 1.9.3 version.
+Creating the following index may be helpful
 
-## Installation
-
-Add the gem to your Gemfile:
-
-    gem 'talentbox-delayed_job_sequel'
-
-Run `bundle install`.
-
-Create the table (using the sequel migration syntax):
-
-    create_table :delayed_jobs do
-      primary_key :id
-      Integer :priority, :default => 0
-      Integer :attempts, :default => 0
-      String  :handler, :text => true
-      String  :last_error, :text => true
-      Time    :run_at
-      Time    :locked_at
-      Time    :failed_at
-      String  :locked_by
-      String  :queue
-      Time    :created_at
-      Time    :updated_at
-      index   [:priority, :run_at]
-    end
-
-## Contributors
-
-Improvements has been made by those awesome contributors:
-
-* Mark Rushakoff (mark-rushakoff)
-* Phan Le
-* Tim Labeeuw
-
-## How to contribute
-
-If you find what looks like a bug:
-
-* Search the [mailing list](http://groups.google.com/group/delayed_job) to see if anyone else had the same issue.
-* Check the [GitHub issue tracker](http://github.com/TalentBox/delayed_job_sequel/issues/) to see if anyone else has reported issue.
-* If you don't see anything, create an issue with information on how to reproduce it.
-
-If you want to contribute an enhancement or a fix:
-
-* Fork the project on github.
-* Make your changes with tests.
-* Commit the changes without making changes to the Rakefile or any other files that aren't related to your enhancement or fix
-* Send a pull request.
+```sql
+CREATE INDEX delayed_jobs_reserve ON delayed_jobs (queue, locked_at, failed_at, run_at);
+```

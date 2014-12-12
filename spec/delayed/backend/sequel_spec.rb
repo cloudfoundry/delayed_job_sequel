@@ -6,6 +6,19 @@ describe Delayed::Backend::Sequel::Job do
     Time.zone = nil
   end
 
+  before do |e|
+    description_prefix = "Delayed::Backend::Sequel::Job it should behave like a delayed_job backend "
+    expected_failures = [
+      description_prefix + "reserve reserves expired jobs",
+      description_prefix + "reserve reserves own jobs",
+      description_prefix + "worker prioritization fetches jobs ordered by priority",
+    ]
+
+    if expected_failures.include? e.example.full_description
+      pending "Removed to reduce chance of deadlock"
+    end
+  end
+
   it_should_behave_like "a delayed_job backend"
 
   it "does not allow more than 1 worker to grab the same job" do

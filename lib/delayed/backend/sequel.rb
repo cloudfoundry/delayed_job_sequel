@@ -19,15 +19,13 @@ module Delayed
           filter do
             (
               (run_at <= db_time_now) &
-              ::Sequel.expr(:locked_at => nil) |
-              (::Sequel.expr(:locked_at) < lock_upper_bound) |
-              {:locked_by => worker_name}
+              ::Sequel.expr(:locked_at => nil)
             ) & {:failed_at => nil}
           end
         end
 
         def_dataset_method :by_priority do
-          order(::Sequel.expr(:priority).asc, ::Sequel.expr(:run_at).asc)
+          order(::Sequel.expr(:run_at).asc)
         end
 
         def self.before_fork
