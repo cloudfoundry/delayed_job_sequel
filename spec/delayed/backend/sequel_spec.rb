@@ -10,11 +10,10 @@ describe Delayed::Backend::Sequel::Job do
     description_prefix = "Delayed::Backend::Sequel::Job it should behave like a delayed_job backend "
     expected_failures = [
       description_prefix + "reserve reserves expired jobs",
-      description_prefix + "reserve reserves own jobs",
       description_prefix + "worker prioritization fetches jobs ordered by priority",
     ]
 
-    if expected_failures.include? e.example.full_description
+    if expected_failures.include? e.full_description
       pending "Removed to reduce chance of deadlock"
     end
   end

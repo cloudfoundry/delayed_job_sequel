@@ -6,10 +6,9 @@ We've removed the following features to reduce deadlock when using MySQL.
 
 * Job Priorities
 * Expired job processing
-* Own failed job processing
 
 Creating the following index may be helpful
 
 ```sql
-CREATE INDEX delayed_jobs_reserve ON delayed_jobs (queue, locked_at, failed_at, run_at);
+CREATE INDEX delayed_jobs_reserve ON delayed_jobs (queue, locked_at, locked_by, failed_at, run_at);
 ```

@@ -19,7 +19,8 @@ module Delayed
           filter do
             (
               (run_at <= db_time_now) &
-              ::Sequel.expr(:locked_at => nil)
+              ::Sequel.expr(:locked_at => nil) |
+              {:locked_by => worker_name}
             ) & {:failed_at => nil}
           end
         end
