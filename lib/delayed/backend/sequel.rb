@@ -13,9 +13,8 @@ module Delayed
           set_default_run_at
         end
 
-        def_dataset_method :ready_to_run do |worker_name, max_run_time|
+        def_dataset_method :ready_to_run do |worker_name|
           db_time_now = model.db_time_now
-          lock_upper_bound = db_time_now - max_run_time
           filter do
             (
               (run_at <= db_time_now) &
@@ -38,21 +37,26 @@ module Delayed
           filter(:locked_by => worker_name).update(:locked_by => nil, :locked_at => nil)
         end
 
-        def self.reserve(worker, max_run_time = Worker.max_run_time)
-          ds = ready_to_run(worker.name, max_run_time)
+        # Find a few candidate jobs to run (in case some immediately get locked by others).
+        def self.find_available(worker_name, limit = 5, max_run_time = Worker.max_run_time)
+          ds = ready_to_run(worker_name)
           ds = ds.filter("priority >= ?", Worker.min_priority) if Worker.min_priority
           ds = ds.filter("priority <= ?", Worker.max_priority) if Worker.max_priority
           ds = ds.filter(:queue => Worker.queues) if Worker.queues.any?
-          ds = ds.by_priority
-          ds = ds.for_update
+          ds.by_priority.limit(limit).all
+        end
 
-          db.transaction do
-            if job = ds.first
-              job.locked_at = self.db_time_now
-              job.locked_by = worker.name
-              job.save(:raise_on_failure => true)
-              job
-            end
+        # Lock this job for this worker.
+        # Returns true if we have the lock, false otherwise.
+        def lock_exclusively!(max_run_time, worker)
+          now           = self.class.db_time_now
+          affected_rows = self.class.ready_to_run(worker).filter({ :id => pk }).update(:locked_at => now, :locked_by => worker)
+          if affected_rows == 1
+            self.locked_at = now
+            self.locked_by = worker
+            return true
+          else
+            return false
           end
         end
 
