@@ -25,7 +25,7 @@ module Delayed
         end
 
         def_dataset_method :by_priority do
-          order(::Sequel.expr(:run_at).asc)
+          order(::Sequel.expr(:priority).asc, ::Sequel.expr(:run_at).asc)
         end
 
         def self.before_fork
