@@ -4,7 +4,7 @@ module Delayed
     module Sequel
       # A job object that is persisted to the database.
       # Contains the work object as a YAML field.
-      class Job < ::Sequel::Model(:delayed_jobs)
+      class Job < ::Sequel::Model(::DelayedJobSequel.table_name)
         include Delayed::Backend::Base
         plugin :timestamps
 
@@ -108,7 +108,7 @@ module Delayed
             if attrs.has_key?(:group)
               column = attrs[:group]
               group_and_count(column.to_sym).map do |record|
-                [column, record[:count]]
+                [record[column.to_sym], record[:count]]
               end
             else
               ds.count

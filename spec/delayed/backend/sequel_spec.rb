@@ -1,8 +1,12 @@
 require "spec_helper"
-require "delayed/backend/sequel"
 
 describe Delayed::Backend::Sequel::Job do
+  before do
+    SimpleJob.runs = 0
+    described_class.delete_all
+  end
   after do
+    Delayed::Worker.reset
     Time.zone = nil
   end
 
@@ -41,16 +45,19 @@ describe Delayed::Backend::Sequel::Job do
   context ".count" do
     context "NewRelic sampler compat" do
       it "allow count with conditions" do
+        described_class.create(failed_at: Time.now)
         expect do
-          Delayed::Job.count(:conditions => "failed_at is not NULL").should == 1
-          Delayed::Job.count(:conditions => "locked_by is not NULL").should == 0
+          Delayed::Job.count(:conditions => "failed_at is not NULL").should eq 1
+          Delayed::Job.count(:conditions => "locked_by is not NULL").should eq 0
         end.to_not raise_error
       end
 
       it "allow count with group and conditions" do
+        described_class.create(queue: "slow", priority: 2)
+        described_class.create(queue: "important", priority: 1)
         expect do
-          Delayed::Job.count(:group => "queue", :conditions => ['run_at < ? and failed_at is NULL', Time.now]).should =~ [["queue", 1]]
-          Delayed::Job.count(:group => "priority", :conditions => ['run_at < ? and failed_at is NULL', Time.now]).should =~ [["priority", 1]]
+          Delayed::Job.count(:group => "queue", :conditions => ['run_at < ? and failed_at is NULL', Time.now]).should =~ [["slow", 1], ["important", 1]]
+          Delayed::Job.count(:group => "priority", :conditions => ['run_at < ? and failed_at is NULL', Time.now]).should =~ [[1, 1], [2, 1]]
         end.to_not raise_error
       end
     end
@@ -88,5 +95,42 @@ describe Delayed::Backend::Sequel::Job do
       job = Delayed::Backend::Sequel::Job.enqueue :payload_object => EnqueueJobMod.new
       Delayed::Backend::Sequel::Job[job.id].run_at.should be_within(1).of(later)
     end
+  end
+
+  it "allows to override the table name" do
+    ::Sequel::Model.db.transaction :rollback => :always do
+      begin
+        DB.create_table :another_delayed_jobs do
+          primary_key :id
+          Integer :priority, :default => 0
+          Integer :attempts, :default => 0
+          String  :handler, :text => true
+          String  :last_error, :text => true
+          Time    :run_at
+          Time    :locked_at
+          Time    :failed_at
+          String  :locked_by
+          String  :queue
+          Time    :created_at
+          Time    :updated_at
+          index   [:priority, :run_at]
+        end
+        change_table_name :another_delayed_jobs
+
+        Delayed::Job.table_name.should == :another_delayed_jobs
+      ensure
+        change_table_name nil
+      end
+    end
+  end
+
+  def change_table_name(name)
+    ::DelayedJobSequel.table_name = name
+    ::Delayed::Backend::Sequel.send :remove_const, :Job
+    load File.expand_path(
+      "../../../../lib/delayed/backend/sequel.rb",
+      __FILE__
+    )
+    ::Delayed::Worker.backend = :sequel
   end
 end
