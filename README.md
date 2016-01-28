@@ -4,7 +4,7 @@ Forked from [delayed\_job\_sequel](https://github.com/TalentBox/delayed_job_sequ
 
 We've removed the following features to reduce deadlock when using MySQL.
 
-* Job Priorities
+* Job Priorities - And then we added them back in (experimental - monitoring deadlock status)
 * Expired job processing
 
 Creating the following index may be helpful
